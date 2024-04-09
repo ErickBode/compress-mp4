@@ -6,6 +6,18 @@ import tkinter as tk
 import os
 import sys
 
+"""
+The available preset values are:
+ultrafast: The fastest encoding speed. This preset is intended for quick prototyping and testing, and may not produce the highest quality output.
+superfast: Faster encoding speed, at the cost of some quality.
+veryfast: A balance between encoding speed and quality.
+faster: A slower encoding speed that produces higher quality output.
+fast: A slower encoding speed that produces even higher quality output.
+medium: A balanced setting that strikes a balance between encoding speed and quality.
+slow: A slower encoding speed that produces the highest quality output.
+slower: The slowest encoding speed, which produces the highest quality output but takes the longest to encode.
+"""
+
 #Classes
 # Define a custom stream writer to redirect stdout and stderr to a widget
 class StdoutRedirector(object):
