@@ -63,13 +63,20 @@ def compress_mp4(input_file, output_file, target_size_bytes, compression_percent
         video_clip.write_videofile(output_file, preset='superfast', codec='libx264', bitrate=f"{target_bitrate_after}k", threads=4)
         video_clip.close()
 
-        print(target_bitrate_before)
-        print(f"{target_bitrate_after}k")
         print(f"Compression complete. Output file: {output_file}")
     except Exception as e:
         print(f"Error: {e}")
 
-def compress_video():
+def compress_mp4_async(input_file, output_file, target_size_bytes, compression_percentage, output_text_widget):
+    # Redirect stdout and stderr to the text widget
+    sys.stdout = StdoutRedirector(output_text_widget)
+    sys.stderr = StdoutRedirector(output_text_widget)
+    
+    # Run compression process
+    compress_mp4(input_file, output_file, target_size_bytes, compression_percentage, output_text_widget)
+ 
+
+def compress_video_async():
      input_file = file_path.get()
      filename = os.path.basename(input_file)
      output_folder = output_path.get()
@@ -82,7 +89,7 @@ def compress_video():
      target_size_bytes = os.path.getsize(input_file)
      compression_percentage = int(selected_percentValue.get())
      
-     compress_mp4(input_file, output_file, target_size_bytes, compression_percentage, output_text)
+     threading.Thread(target=compress_mp4_async, args=(input_file, output_file, target_size_bytes, compression_percentage, output_text)).start()
 
 def browseFile():
       filename = ctk.filedialog.askopenfilename()
@@ -331,7 +338,7 @@ compress_button = ctk.CTkButton(master=frame,
                                 text="Compress",
                                 corner_radius=6,
                                 font=("Arial", 28),
-                                command=compress_video)
+                                command=compress_video_async)
 compress_button.place(relx=0.797, rely=0.46, anchor=tk.CENTER)
     
 
