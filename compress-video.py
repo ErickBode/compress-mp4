@@ -5,6 +5,7 @@ import customtkinter as ctk
 import tkinter as tk
 import os
 import sys
+import threading
 
 """
 The available preset values are:
@@ -31,6 +32,11 @@ class StdoutRedirector(object):
         self.text_widget.config(state="disabled")  # Disable editing again
 
 # Functions
+def get_file_size(file_path):
+    size_bytes = os.path.getsize(file_path)
+    size_mb = size_bytes / (1024 * 1024)  # Convert bytes to MB
+    return "{:.1f}".format(size_mb)
+
 def compress_mp4(input_file, output_file, target_size_bytes, compression_percentage, output_text_widget):
     # Redirect stdout and stderr to the text widget
     sys.stdout = StdoutRedirector(output_text_widget)
@@ -57,7 +63,7 @@ def compress_mp4(input_file, output_file, target_size_bytes, compression_percent
         video_clip.write_videofile(output_file, preset='superfast', codec='libx264', bitrate=f"{target_bitrate_after}k", threads=4)
         video_clip.close()
 
-        print(target_bitrate_after)
+        print(target_bitrate_before)
         print(f"{target_bitrate_after}k")
         print(f"Compression complete. Output file: {output_file}")
     except Exception as e:
@@ -81,7 +87,16 @@ def compress_video():
 def browseFile():
       filename = ctk.filedialog.askopenfilename()
       if filename:
+          file_size.set(get_file_size(filename))
           file_path.set(filename)
+
+          current_size_mb = float(get_file_size(filename))
+          target_size_mb = 24.0
+
+          reduction_percentage = int(((target_size_mb - current_size_mb) / current_size_mb) * 100)
+          reduction_percentage += 100
+
+          target_percent_fileSize.set(reduction_percentage)
 
 def browseFolder():
       foldername = ctk.filedialog.askdirectory()
@@ -157,25 +172,37 @@ label_SelectFile = ctk.CTkLabel(master=frame,
                                 corner_radius=8)
 label_SelectFile.place(relx=0.125, rely=0.125, anchor=tk.CENTER)
 
+# Create a label and entry for displaying the size of the selected file
+text_FileSize = tk.StringVar(value="File Size (MB): ")
+label_SelectSize = ctk.CTkLabel(master=frame,
+                                width=1000,
+                                height=25, 
+                                textvariable=text_FileSize,
+                                text_color="white",
+                                font=("Arial", 18),
+                                corner_radius=8)
+label_SelectSize.place(relx=0.1124, rely=0.468, anchor=tk.CENTER)
+
+text_OutputFileSize = tk.StringVar(value="To reach (24.0 mb): ")
+label_OutputFileSize = ctk.CTkLabel(master=frame,
+                                width=250,
+                                height=25, 
+                                textvariable=text_OutputFileSize,
+                                text_color="white",
+                                font=("Arial", 18),
+                                corner_radius=8)
+label_OutputFileSize.place(relx=0.4, rely=0.466, anchor=tk.CENTER)
+
 # Label Select Taget Size
-text_SelectSize = tk.StringVar(value="Select Target Size")
+text_SelectSize = tk.StringVar(value="Target Size: ")
 label_SelectSize = ctk.CTkLabel(master=frame,
                                 width=1000,
                                 height=25,
                                 textvariable=text_SelectSize,
                                 text_color="white",
-                                font=("Arial", 20),
+                                font=("Arial", 18),
                                 corner_radius=8)
-label_SelectSize.place(relx=0.113, rely=0.25, anchor=tk.CENTER)
-
-# Label (%)
-text_SelectPercent = tk.StringVar(value="(%)")
-label_SelectPercent = ctk.CTkLabel(master=frame,
-                                   textvariable=text_SelectPercent,
-                                   text_color="white",
-                                   font=("Arial", 16),
-                                   corner_radius=8)
-label_SelectPercent.place(relx=0.216, rely=0.252, anchor=tk.CENTER)
+label_SelectSize.place(relx=0.292, rely=0.19, anchor=tk.CENTER)
 
 # Browse Input Button
 browseInput_button = ctk.CTkButton(master=frame,
@@ -223,16 +250,55 @@ output = ctk.CTkEntry(master=frame,
                       state="readonly")
 output.place(relx=0.654, rely=0.12525, anchor=tk.CENTER)
 
+# Current File Size entry field
+file_size = tk.StringVar()
+file_size_entry = ctk.CTkEntry(master=frame,
+                               width=80,
+                               height=20,
+                               fg_color=("dark-gray", "gray"),
+                               text_color="white",
+                               font=("Arial", 18),
+                               textvariable=file_size,
+                               corner_radius=6,
+                               state="readonly")
+file_size_entry.place(relx=0.215, rely=0.468, anchor=tk.CENTER)
+
+# Reach file size entry field
+target_percent_fileSize = tk.StringVar()
+file_size_reduction = ctk.CTkEntry(master=frame,
+                               width=37,
+                               height=20,
+                               fg_color=("dark-gray", "gray"),
+                               text_color="white",
+                               font=("Arial", 19),
+                               textvariable=target_percent_fileSize,
+                               corner_radius=6,
+                               state="readonly")
+file_size_reduction.place(relx=0.508, rely=0.468, anchor=tk.CENTER)
+
+# Reach file size % entry field
+textLabelPercentSize = tk.StringVar(value="%")
+file_size_reduction = ctk.CTkEntry(master=frame,
+                               width=30,
+                               height=20,
+                               fg_color=("dark-gray", "gray"),
+                               text_color="white",
+                               textvariable=textLabelPercentSize,
+                               font=("Arial", 19),
+                               corner_radius=6,
+                               state="readonly")
+file_size_reduction.place(relx=0.545, rely=0.468, anchor=tk.CENTER)
+
 
 # Start of Slider Section
 slider_percent = ctk.CTkSlider(master=frame,
-                               width=400,
+                               width=515,
                                height=18,
                                from_=10,
                                to=100,
                                number_of_steps=9,
                                command=update_value)
-slider_percent.place(relx=0.44, rely=0.252, anchor=tk.CENTER)
+slider_percent.place(relx=0.6035, rely=0.193, anchor=tk.CENTER)
 
 selected_percentValue = tk.StringVar(value="60")
 label_selectPercent = ctk.CTkLabel(master=frame,
@@ -243,26 +309,30 @@ label_selectPercent = ctk.CTkLabel(master=frame,
                                    text_color="white",
                                    font=("Arial", 19),
                                    corner_radius=6)
-label_selectPercent.place(relx=0.68, rely=0.252, anchor=tk.CENTER)
+label_selectPercent.place(relx=0.905, rely=0.193, anchor=tk.CENTER)
 
 # Create the label for displaying the '%' sign
+textLabelPercent = tk.StringVar(value="%")
 label_percent = ctk.CTkLabel(master=frame,
-                             text="%",
+                             width=25,
+                             height=25,
+                             textvariable=textLabelPercent,
+                             fg_color=("dark-gray", "gray"),
                              text_color="white",
                              font=("Arial", 19),
                              corner_radius=6)
-label_percent.place(relx=0.725, rely=0.252, anchor=tk.CENTER)
+label_percent.place(relx=0.948, rely=0.193, anchor=tk.CENTER)
 # End of Slider Section.
 
 # Create the Compress button
 compress_button = ctk.CTkButton(master=frame,
-                                width=100,
-                                height=50,
+                                width=300,
+                                height=35,
                                 text="Compress",
-                                corner_radius=4,
-                                font=("Arial", 30),
+                                corner_radius=6,
+                                font=("Arial", 28),
                                 command=compress_video)
-compress_button.place(relx=0.5, rely=0.4, anchor=tk.CENTER)
+compress_button.place(relx=0.797, rely=0.46, anchor=tk.CENTER)
     
 
 # Run the tkinter event loop
